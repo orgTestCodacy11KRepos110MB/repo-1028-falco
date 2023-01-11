@@ -25,7 +25,6 @@ static uint16_t default_ruleset = 0;
 static uint16_t non_default_ruleset = 3;
 static uint16_t other_non_default_ruleset = 2;
 static std::set<std::string> tags = {"some_tag", "some_other_tag"};
-static std::set<uint16_t> evttypes = { ppm_event_type::PPME_GENERIC_E };
 
 static std::shared_ptr<gen_event_filter_factory> create_factory()
 {

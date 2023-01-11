@@ -74,7 +74,7 @@ TEST_CASE("Should find event types from filter", "[rule_loader]")
 	set<uint16_t> all_events;
 	set<uint16_t> no_events;
 
-    for(uint32_t i = 2; i < PPM_EVENT_MAX; i++)
+    for(uint32_t i = PPME_GENERIC_E; i < PPM_EVENT_MAX; i++)
     {
         // Skip events that are unused.
         if(sinsp::is_unused_event(i))
