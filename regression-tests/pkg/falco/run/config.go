@@ -1,4 +1,4 @@
-package falcotest
+package run
 
 import (
 	"io"
