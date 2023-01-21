@@ -7,34 +7,6 @@ import (
 	"github.com/falcosecurity/falco/regression-tests/pkg/falco/run"
 )
 
-/*
-addl_cmdline_opts
-check_detection_counts
-detect_counts
-detect_level
-disable_tags
-disabled_rules
-enable_source
-json_include_output_property
-json_include_tags_property
-json_output
-outputs
-package
-priority
-rules_events
-rules_file
-run_duration
-run_tags
-should_detect
-time_iso_8601
-trace_file
-validate_errors
-validate_json
-validate_ok
-validate_rules_file
-validate_warnings
-*/
-
 func Config(c *run.Config) Condition {
 	return func(ts *testerState) error {
 		if !ts.done {

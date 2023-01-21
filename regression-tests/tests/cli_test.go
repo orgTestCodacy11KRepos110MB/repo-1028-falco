@@ -21,7 +21,7 @@ func init() {
 }
 
 func TestBadConfigNoOutput(t *testing.T) {
-	test.TestProcess(t,
+	test.RunTest(t,
 		run.NewProcRunner(DefaultFalcoBinaryPath),
 		test.ExitCode(1),
 		test.StderrMatch(regexp.MustCompile(".*No outputs configured.*")),
@@ -31,7 +31,7 @@ func TestBadConfigNoOutput(t *testing.T) {
 func TestArgVersion(t *testing.T) {
 	c := run.Config{}
 	c.StdoutOutput.Enabled = true
-	test.TestProcess(t,
+	test.RunTest(t,
 		run.NewProcRunner(DefaultFalcoBinaryPath),
 		test.Config(&c),
 		test.Args("--version"),
