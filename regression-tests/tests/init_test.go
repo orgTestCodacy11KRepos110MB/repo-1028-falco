@@ -9,8 +9,8 @@ var (
 	// IsRoot is true if the current process is run as root
 	IsRoot = false
 	//
-	// DefaultFalcoExecutable is the default path of the Falco executable
-	DefaultFalcoExecutable = "/usr/bin/falco"
+	// FalcoExecutable is the default path of the Falco executable
+	FalcoExecutable = "/usr/bin/falco"
 )
 
 func TestMain(m *testing.M) {

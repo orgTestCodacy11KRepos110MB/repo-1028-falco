@@ -24,6 +24,10 @@ type testerState struct {
 	stderr   bytes.Buffer
 }
 
+func skewedDuration(d time.Duration) time.Duration {
+	return time.Duration(float64(d) * 1.10)
+}
+
 // Condition is an assertion over a given Falco run
 type Condition func(*testerState) error
 
@@ -52,8 +56,7 @@ func setupTestBench(tb testing.TB, runner run.Runner, conditions ...Condition) (
 // RunTest runs a test with the given conditions with the given runner
 func RunTest(t *testing.T, runner run.Runner, conditions ...Condition) {
 	state, runOpts := setupTestBench(t, runner, conditions...)
-	// todo: add some drift to the duration
-	ctx, cancel := context.WithTimeout(context.Background(), state.duration)
+	ctx, cancel := context.WithTimeout(context.Background(), skewedDuration(state.duration))
 	defer cancel()
 	state.err = runner.Run(ctx, runOpts...)
 	state.done = true

@@ -1,7 +1,9 @@
 package test
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,29 +14,29 @@ ALERTS:
 	detect_counts
 	detect_level
 	should_detect
-CLI:
-	addl_cmdline_opts
-	*disable_tags
-	*run_tags
-	*disabled_rules
-	*enable_source
-	run_duration
-	trace_file
-	* rules_files (also CONFIG)
-CONFIG:
-	json_include_output_property
-	json_include_tags_property
-	json_output
-	*priority
-	time_iso_8601
 RULE_VALIDATION:
 	validate_errors
 	validate_json
 	validate_ok
 	validate_rules_file
 	validate_warnings
+CLI:
+	* addl_cmdline_opts
+	* disable_tags
+	* run_tags
+	* disabled_rules
+	* enable_source
+	* run_duration
+	* trace_file
+	* rules_files (also CONFIG)
+CONFIG:
+	(skip) json_include_output_property
+	(skip) json_include_tags_property
+	* json_output
+	* priority
+	(skip) time_iso_8601
 DEPRECATED:
-	rules_events
+	(skip) rules_events
 */
 
 func joinConditions(conditions ...Condition) Condition {
@@ -185,4 +187,31 @@ func RuleFiles(paths ...string) Condition {
 
 func RulePriority(p string) Condition {
 	return editConfig("priority: " + p)
+}
+
+func OutputJSON(v bool) Condition {
+	if v {
+		return editConfig("json_output: true")
+	}
+	return editConfig("json_output: false")
+}
+
+func CaptureFile(path string) Condition {
+	return addOrRemoveArg(true, true, "-e", path)
+}
+
+func Duration(d time.Duration) Condition {
+	return joinConditions(
+		addOrRemoveArg(true, true, "-M", fmt.Sprintf("%d", int64(d.Seconds()))),
+		func(ts *testerState) error {
+			if !ts.done {
+				ts.duration = skewedDuration(d)
+			} else {
+				if ts.err == context.DeadlineExceeded {
+					return fmt.Errorf("falco did not terminate within expected duration: %s", d.String())
+				}
+			}
+			return nil
+		},
+	)
 }

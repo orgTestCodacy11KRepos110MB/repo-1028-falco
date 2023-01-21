@@ -39,19 +39,27 @@ func ExitCode(f func(int) error) Condition {
 	}
 }
 
-func Stdout(f func(string) error) Condition {
+func Stdout(funcs ...func(string) error) Condition {
 	return func(ts *testerState) error {
 		if ts.done {
-			return f(ts.stdout.String())
+			for _, f := range funcs {
+				if err := f(ts.stdout.String()); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	}
 }
 
-func Stderr(f func(string) error) Condition {
+func Stderr(funcs ...func(string) error) Condition {
 	return func(ts *testerState) error {
 		if ts.done {
-			return f(ts.stderr.String())
+			for _, f := range funcs {
+				if err := f(ts.stderr.String()); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	}

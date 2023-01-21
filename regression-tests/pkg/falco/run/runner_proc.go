@@ -34,8 +34,8 @@ func (p *procRunner) writeToTempFile(c string) (string, func() error, error) {
 	return "", nil, err
 }
 
-// NewProcRunner returns a Falco runner that runs a binary process
-func NewProcRunner(executable string) Runner {
+// NewExecutableRunner returns a Falco runner that runs a binary process
+func NewExecutableRunner(executable string) Runner {
 	return &procRunner{executable: executable}
 }
 
