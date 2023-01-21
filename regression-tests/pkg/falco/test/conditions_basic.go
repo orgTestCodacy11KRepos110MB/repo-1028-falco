@@ -2,15 +2,14 @@ package test
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/falcosecurity/falco/regression-tests/pkg/falco/run"
 )
 
-func Config(c *run.Config) Condition {
+func Config(c string) Condition {
 	return func(ts *testerState) error {
 		if !ts.done {
-			ts.config = *c
+			ts.config = c
 		}
 		return nil
 	}
@@ -19,29 +18,24 @@ func Config(c *run.Config) Condition {
 func Args(args ...string) Condition {
 	return func(ts *testerState) error {
 		if !ts.done {
-			ts.args = args
+			ts.args = append(ts.args, args...)
 		}
 		return nil
 	}
 }
 
-func ExitCode(v int) Condition {
+func ExitCode(f func(int) error) Condition {
 	return func(ts *testerState) error {
 		if !ts.done {
 			return nil
 		}
-		if ts.err != nil {
-			if codeErr, ok := ts.err.(*run.CodeError); ok {
-				if codeErr.Code != v {
-					return fmt.Errorf("expected exit code %d, but got %d", v, codeErr.Code)
-				}
-				return nil
-			}
+		if ts.err == nil {
+			return f(0)
 		}
-		if v == 0 {
-			return nil
+		if codeErr, ok := ts.err.(*run.CodeError); ok {
+			return f(codeErr.Code)
 		}
-		return fmt.Errorf("expected exit code %d, but could not retrieve it", v)
+		return fmt.Errorf("could not retrieve exit code")
 	}
 }
 
@@ -61,40 +55,4 @@ func Stderr(f func(string) error) Condition {
 		}
 		return nil
 	}
-}
-
-func StdoutMatch(e *regexp.Regexp) Condition {
-	return Stdout(func(s string) error {
-		if !e.MatchString(s) {
-			return fmt.Errorf("stdout does not match regular expression:\nregexp=%s\n\nstdout=%s", e.String(), s)
-		}
-		return nil
-	})
-}
-
-func StdoutNotMatch(e *regexp.Regexp) Condition {
-	return Stdout(func(s string) error {
-		if e.MatchString(s) {
-			return fmt.Errorf("stdout does matches regular expression:\nregexp=%s\n\nstdout=%s", e.String(), s)
-		}
-		return nil
-	})
-}
-
-func StderrMatch(e *regexp.Regexp) Condition {
-	return Stderr(func(s string) error {
-		if !e.MatchString(s) {
-			return fmt.Errorf("stderr does not match regular expression:\nregexp=%s\n\nstderr=%s", e.String(), s)
-		}
-		return nil
-	})
-}
-
-func StderrNotMatch(e *regexp.Regexp) Condition {
-	return Stderr(func(s string) error {
-		if e.MatchString(s) {
-			return fmt.Errorf("stderr does matches regular expression:\nregexp=%s\n\nstderr=%s", e.String(), s)
-		}
-		return nil
-	})
 }

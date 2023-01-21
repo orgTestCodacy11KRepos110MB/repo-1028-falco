@@ -18,13 +18,13 @@ type Runner interface {
 }
 
 type runnerOptions struct {
-	config  *Config
+	config  string
 	options []string
 	stderr  io.Writer
 	stdout  io.Writer
 }
 
-func WithConfig(config *Config) RunnerOption {
+func WithConfig(config string) RunnerOption {
 	return func(ro *runnerOptions) { ro.config = config }
 }
 

@@ -19,7 +19,7 @@ type testerState struct {
 	done     bool
 	err      error
 	args     []string
-	config   run.Config
+	config   string
 	stdout   bytes.Buffer
 	stderr   bytes.Buffer
 }
@@ -41,13 +41,12 @@ func setupTestBench(tb testing.TB, runner run.Runner, conditions ...Condition) (
 		}
 	}
 
-	// run Falco
-	var runOpts []run.RunnerOption
-	runOpts = append(runOpts, run.WithStdout(&state.stdout))
-	runOpts = append(runOpts, run.WithStderr(&state.stderr))
-	runOpts = append(runOpts, run.WithConfig(&state.config))
-	runOpts = append(runOpts, run.WithOptions(state.args))
-	return state, runOpts
+	return state, []run.RunnerOption{
+		run.WithStdout(&state.stdout),
+		run.WithStderr(&state.stderr),
+		run.WithConfig(state.config),
+		run.WithOptions(state.args),
+	}
 }
 
 // RunTest runs a test with the given conditions with the given runner

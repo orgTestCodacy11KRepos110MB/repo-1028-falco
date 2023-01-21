@@ -9,37 +9,40 @@ import (
 )
 
 type procRunner struct {
-	binaryPath string
+	executable string
 }
 
-// writeConfigToTempFile encodes a config to a newly-created temporary file
-// and returns the file name or a non-nil error in case of failure.
-// The newly-created file should be deleted manually from the filesystem
-func (p *procRunner) writeConfigToTempFile(c *Config) (string, error) {
+// writeToTempFile encodes a config to a newly-created temporary file
+// and returns the file name and a callback for deleting the file,
+// or a non-nil error in case of failure. The newly-created file should be
+// deleted manually by invoking the returned callback.
+func (p *procRunner) writeToTempFile(c string) (string, func() error, error) {
 	f, err := ioutil.TempFile("", "falco-runner-")
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	name := f.Name()
-	err = c.Marshal(f)
-	if err == nil {
+	n, err := f.WriteString(c)
+	if err == nil || n < len(c) {
 		err = f.Close()
 		if err == nil {
-			return name, nil
+			return name, func() error { return os.Remove(name) }, nil
+		}
+		if n < len(c) {
+			err = io.ErrShortWrite
 		}
 	}
-	os.Remove(name)
-	return "", err
+	return "", nil, err
 }
 
 // NewProcRunner returns a Falco runner that runs a binary process
-func NewProcRunner(binaryPath string) Runner {
-	return &procRunner{binaryPath: binaryPath}
+func NewProcRunner(executable string) Runner {
+	return &procRunner{executable: executable}
 }
 
 func (p *procRunner) Run(ctx context.Context, options ...RunnerOption) error {
 	opts := &runnerOptions{
-		config:  &Config{},
+		config:  "",
 		options: []string{},
 		stderr:  io.Discard,
 		stdout:  io.Discard,
@@ -49,16 +52,16 @@ func (p *procRunner) Run(ctx context.Context, options ...RunnerOption) error {
 	}
 
 	// create temp file to dump the YAML configuration
-	confPath, err := p.writeConfigToTempFile(opts.config)
+	conf, confDelete, err := p.writeToTempFile(opts.config)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(confPath)
+	defer confDelete()
 
 	// launch Falco process
 	opts.options = append(opts.options, "-c")
-	opts.options = append(opts.options, confPath)
-	cmd := exec.CommandContext(ctx, p.binaryPath, opts.options...)
+	opts.options = append(opts.options, conf)
+	cmd := exec.CommandContext(ctx, p.executable, opts.options...)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 
