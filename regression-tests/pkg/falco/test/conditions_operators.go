@@ -35,6 +35,53 @@ func NotEquals[T comparable](values ...T) func(T) error {
 	}
 }
 
+func joinChecks[T any](v T, funcs ...func(T) error) error {
+	for _, f := range funcs {
+		if err := f(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Count[T any](check func(T) error, funcs ...func(int) error) func([]T) error {
+	return func(values []T) error {
+		count := 0
+		for _, a := range values {
+			if err := check(a); err == nil {
+				count++
+			}
+		}
+		return joinChecks(count, funcs...)
+	}
+}
+
+func Where[T any](check func(T) error, funcs ...func([]T) error) func([]T) error {
+	return func(values []T) error {
+		var subset []T
+		for _, a := range values {
+			if err := check(a); err == nil {
+				subset = append(subset, a)
+			}
+		}
+		return joinChecks(subset, funcs...)
+	}
+}
+
+func Some[T any](check func(T) error, funcs ...func(T) error) func([]T) error {
+	return func(values []T) error {
+		var err error
+		for _, a := range values {
+			if err = check(a); err == nil {
+				if err = joinChecks(a, funcs...); err == nil {
+					return nil
+				}
+			}
+		}
+		return fmt.Errorf("no element matches the check, the last issues is: %s", err.Error())
+	}
+}
+
 func Contains(values ...string) func(string) error {
 	return func(s string) error {
 		for _, v := range values {

@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"os"
 	"regexp"
 	"testing"
 
@@ -9,9 +8,8 @@ import (
 	"github.com/falcosecurity/falco/regression-tests/pkg/falco/test"
 )
 
-func TestEmptyConfig(t *testing.T) {
+func TestFailEmptyConfig(t *testing.T) {
 	test.RunTest(t, run.NewExecutableRunner(FalcoExecutable),
-		test.Stderr(test.Prints[string](os.Stderr)),
 		test.ExitCode(test.Equals(1)),
 		test.Stderr(test.Contains("You must specify at least one rules")),
 	)

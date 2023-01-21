@@ -24,10 +24,6 @@ type testerState struct {
 	stderr   bytes.Buffer
 }
 
-func skewedDuration(d time.Duration) time.Duration {
-	return time.Duration(float64(d) * 1.10)
-}
-
 // Condition is an assertion over a given Falco run
 type Condition func(*testerState) error
 
