@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 )
@@ -17,7 +16,7 @@ type procRunner struct {
 // or a non-nil error in case of failure. The newly-created file should be
 // deleted manually by invoking the returned callback.
 func (p *procRunner) writeToTempFile(c string) (string, func() error, error) {
-	f, err := ioutil.TempFile("", "falco-runner-")
+	f, err := os.CreateTemp("", "falco-runner-")
 	if err != nil {
 		return "", nil, err
 	}
@@ -42,10 +41,10 @@ func NewProcRunner(executable string) Runner {
 
 func (p *procRunner) Run(ctx context.Context, options ...RunnerOption) error {
 	opts := &runnerOptions{
-		config:  "",
-		options: []string{},
-		stderr:  io.Discard,
-		stdout:  io.Discard,
+		config: "",
+		args:   []string{},
+		stderr: io.Discard,
+		stdout: io.Discard,
 	}
 	for _, o := range options {
 		o(opts)
@@ -59,9 +58,9 @@ func (p *procRunner) Run(ctx context.Context, options ...RunnerOption) error {
 	defer confDelete()
 
 	// launch Falco process
-	opts.options = append(opts.options, "-c")
-	opts.options = append(opts.options, conf)
-	cmd := exec.CommandContext(ctx, p.executable, opts.options...)
+	opts.args = append(opts.args, "-c")
+	opts.args = append(opts.args, conf)
+	cmd := exec.CommandContext(ctx, p.executable, opts.args...)
 	cmd.Stdout = opts.stdout
 	cmd.Stderr = opts.stderr
 

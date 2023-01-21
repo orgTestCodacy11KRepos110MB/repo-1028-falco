@@ -45,7 +45,7 @@ func setupTestBench(tb testing.TB, runner run.Runner, conditions ...Condition) (
 		run.WithStdout(&state.stdout),
 		run.WithStderr(&state.stderr),
 		run.WithConfig(state.config),
-		run.WithOptions(state.args),
+		run.WithArgs(state.args),
 	}
 }
 

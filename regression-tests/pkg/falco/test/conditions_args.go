@@ -1,6 +1,10 @@
 package test
 
-import "fmt"
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
 
 /*
 ALERTS:
@@ -10,18 +14,18 @@ ALERTS:
 	should_detect
 CLI:
 	addl_cmdline_opts
-	disable_tags
-	run_tags
-	disabled_rules
-	enable_source
+	*disable_tags
+	*run_tags
+	*disabled_rules
+	*enable_source
 	run_duration
 	trace_file
-	rules_files (also CONFIG)
+	* rules_files (also CONFIG)
 CONFIG:
 	json_include_output_property
 	json_include_tags_property
 	json_output
-	priority
+	*priority
 	time_iso_8601
 RULE_VALIDATION:
 	validate_errors
@@ -32,6 +36,33 @@ RULE_VALIDATION:
 DEPRECATED:
 	rules_events
 */
+
+func joinConditions(conditions ...Condition) Condition {
+	return func(ts *testerState) error {
+		for _, c := range conditions {
+			if err := c(ts); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func mergeMaps(a, b map[interface{}]interface{}) {
+	for k, v := range b {
+		// If you use map[string]interface{}, ok is always false here.
+		// Because yaml.Unmarshal will give you map[interface{}]interface{}.
+		if v, ok := v.(map[interface{}]interface{}); ok {
+			if bv, ok := a[k]; ok {
+				if bv, ok := bv.(map[interface{}]interface{}); ok {
+					mergeMaps(bv, v)
+					continue
+				}
+			}
+		}
+		a[k] = v
+	}
+}
 
 // addOrRemoveArg adds or remove an argument from the CLI (along with the
 // other following arguments representing parameters, such as `-r <rule_filename>`.
@@ -66,7 +97,7 @@ func addOrRemoveArg(add, unique bool, args ...string) Condition {
 					i += len(args) - 1
 				}
 			}
-			if !found {
+			if add && !found {
 				newArgs = append(newArgs, args...)
 			}
 			ts.args = newArgs
@@ -75,6 +106,83 @@ func addOrRemoveArg(add, unique bool, args ...string) Condition {
 	}
 }
 
+func toggleTags(enable bool, tags ...string) Condition {
+	arg := "-t"
+	if !enable {
+		arg = "-T"
+	}
+	var conds []Condition
+	for _, t := range tags {
+		conds = append(conds, addOrRemoveArg(true, false, arg, t))
+	}
+	return joinConditions(conds...)
+}
+
+func editConfig(config string) Condition {
+	return func(ts *testerState) (err error) {
+		if ts.done {
+			return nil
+		}
+		curConfig := make(map[interface{}]interface{})
+		editConfig := make(map[interface{}]interface{})
+		if err = yaml.Unmarshal([]byte(ts.config), &curConfig); err == nil {
+			if err = yaml.Unmarshal([]byte(config), &editConfig); err == nil {
+				var newConf []byte
+				mergeMaps(curConfig, editConfig)
+				newConf, err = yaml.Marshal(&curConfig)
+				if err == nil {
+					ts.config = string(newConf)
+				}
+			}
+		}
+		return err
+	}
+}
+
 func AllEvents(v bool) Condition {
 	return addOrRemoveArg(v, true, "-A")
+}
+
+func EnableTags(tags ...string) Condition {
+	return toggleTags(true, tags...)
+}
+
+func DisableTags(tags ...string) Condition {
+	return toggleTags(true, tags...)
+}
+
+func DisableRules(rules ...string) Condition {
+	var conds []Condition
+	for _, r := range rules {
+		conds = append(conds, addOrRemoveArg(true, false, "-D", r))
+	}
+	return joinConditions(conds...)
+}
+
+func EnableSources(sources ...string) Condition {
+	var conds []Condition
+	for _, s := range sources {
+		conds = append(conds, addOrRemoveArg(true, false, "--enable-source", s))
+	}
+	return joinConditions(conds...)
+}
+
+func DisableSources(sources ...string) Condition {
+	var conds []Condition
+	for _, s := range sources {
+		conds = append(conds, addOrRemoveArg(true, false, "--disable-source", s))
+	}
+	return joinConditions(conds...)
+}
+
+func RuleFiles(paths ...string) Condition {
+	var conds []Condition
+	for _, s := range paths {
+		conds = append(conds, addOrRemoveArg(true, false, "-r", s))
+	}
+	return joinConditions(conds...)
+}
+
+func RulePriority(p string) Condition {
+	return editConfig("priority: " + p)
 }

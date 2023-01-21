@@ -18,18 +18,18 @@ type Runner interface {
 }
 
 type runnerOptions struct {
-	config  string
-	options []string
-	stderr  io.Writer
-	stdout  io.Writer
+	config string
+	args   []string
+	stderr io.Writer
+	stdout io.Writer
 }
 
 func WithConfig(config string) RunnerOption {
 	return func(ro *runnerOptions) { ro.config = config }
 }
 
-func WithOptions(options []string) RunnerOption {
-	return func(ro *runnerOptions) { ro.options = options }
+func WithArgs(args []string) RunnerOption {
+	return func(ro *runnerOptions) { ro.args = args }
 }
 
 func WithStdout(writer io.Writer) RunnerOption {
